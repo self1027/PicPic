@@ -1,66 +1,96 @@
 <%- include ('partials/header.ejs') %>
-    <%- include ('partials/navbar.ejs') %>
-    
-    <div class="container mt-4">
-        <div class="card shadow-sm p-4">
-            <h2 class="text-center mb-4">Upload de Imagem</h2>
-            <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="text-center">
-                <div class="mb-3">
-                    <input type="file" class="form-control" name="image" accept="image/*" onchange="autoUpload(event)">
-                </div>
-            </form>
-            <div class="text-center mt-3">
-                <img id="imagePreview" class="img-fluid rounded shadow" style="display:none; max-width: 100%;" />
+<%- include ('partials/navbar.ejs') %>
+
+<div class="container mt-4">
+    <div class="card shadow-sm p-4">
+        <h2 class="text-center mb-4">Upload de Imagem</h2>
+        <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="text-center">
+            <div class="mb-3">
+                <input type="file" class="form-control" name="image" accept="image/*" onchange="autoUpload(event)">
             </div>
-            <div class="text-center mt-3">
-                <label for="threshold">Limiar de Binarização (0-255):</label>
-                <input type="number" id="threshold" class="form-control w-25 d-inline" min="0" max="255" value="128">
-            </div>
-            <div class="text-center mt-3">
-                <button class="btn btn-success" onclick="binarizarImagem()">Binarizar</button>
-            </div>
+        </form>
+        <div class="text-center mt-3">
+            <img id="imagePreview" class="img-fluid rounded shadow" style="display:none; max-width: 100%;" />
+            <p id="uploadStatus" class="text-muted mt-2" style="display:none;"></p>
         </div>
-        
-        <div class="card shadow-sm p-4 mt-4">
-            <h2 class="text-center mb-4">Imagem Processada</h2>
-            <div class="text-center">
-                <img id="processedImage" class="img-fluid rounded shadow" style="display:none; max-width: 100%;" />
-            </div>
+        <div class="text-center mt-3">
+            <label for="threshold">Limiar de Binarização (0-255):</label>
+            <input type="number" id="threshold" class="form-control w-25 d-inline" min="0" max="255" value="128" disabled>
+        </div>
+        <div class="text-center mt-3">
+            <button class="btn btn-success" id="binarizarBtn" onclick="processImage('binarizar')" disabled>Binarizar</button>
+            <button class="btn btn-primary" id="mediaBtn" onclick="processImage('filtro-media')" disabled>Filtro Média</button>
+            <button class="btn btn-warning" id="medianaBtn" onclick="processImage('filtro-mediana')" disabled>Filtro Mediana</button>
+            <button class="btn btn-info" id="modaBtn" onclick="processImage('filtro-moda')" disabled>Filtro Moda</button>
         </div>
     </div>
     
-    <script>
-        function autoUpload(event) {
-            const reader = new FileReader();
-            reader.onload = function () {
-                const output = document.getElementById('imagePreview');
-                output.src = reader.result;
-                output.style.display = 'block';
-            };
-            reader.readAsDataURL(event.target.files[0]);
+    <div class="card shadow-sm p-4 mt-4">
+        <h2 class="text-center mb-4">Imagem Processada</h2>
+        <div class="text-center">
+            <img id="processedImage" class="img-fluid rounded shadow" style="display:none; max-width: 100%;" />
+            <p id="processStatus" class="text-muted mt-2" style="display:none;"></p>
+        </div>
+    </div>
+</div>
 
-            const form = document.getElementById('uploadForm');
-            const formData = new FormData(form);
+<script>
+    function autoUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function () {
+            const output = document.getElementById('imagePreview');
+            output.src = reader.result;
+            output.style.display = 'block';
+            document.getElementById('uploadStatus').textContent = 'Enviando imagem...';
+            document.getElementById('uploadStatus').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+        
+        const form = document.getElementById('uploadForm');
+        const formData = new FormData(form);
+        
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Erro no envio da imagem');
+            return response.text();
+        })
+        .then(() => {
+            document.getElementById('uploadStatus').textContent = 'Imagem enviada com sucesso!';
+            document.getElementById('threshold').disabled = false;
+            document.getElementById('binarizarBtn').disabled = false;
+            document.getElementById('mediaBtn').disabled = false;
+            document.getElementById('medianaBtn').disabled = false;
+            document.getElementById('modaBtn').disabled = false;
+        })
+        .catch(error => {
+            console.error(error);
+            document.getElementById('uploadStatus').textContent = 'Erro ao enviar a imagem. Tente novamente.';
+        });
+    }
 
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            }).then(response => response.text())
-              .then(() => console.log('Imagem enviada automaticamente.'))
-              .catch(error => console.error('Erro ao enviar imagem:', error));
-        }
+    function processImage(filter) {
+        document.getElementById('processStatus').textContent = 'Processando...';
+        document.getElementById('processStatus').style.display = 'block';
 
-        function binarizarImagem() {
-            const threshold = document.getElementById('threshold').value;
-            fetch(`/binarizar?threshold=${threshold}`)
-                .then(response => response.json())
-                .then(data => {
-                    const processedImage = document.getElementById('processedImage');
-                    processedImage.src = data.imageUrl;
-                    processedImage.style.display = 'block';
-                })
-                .catch(error => console.error('Erro ao binarizar imagem:', error));
-        }
-    </script>
-    
+        fetch(`/${filter}`)
+            .then(response => response.json())
+            .then(data => {
+                const processedImage = document.getElementById('processedImage');
+                processedImage.src = data.imageUrl;
+                processedImage.style.display = 'block';
+                document.getElementById('processStatus').textContent = 'Processamento concluído!';
+            })
+            .catch(error => {
+                console.error(error);
+                document.getElementById('processStatus').textContent = 'Erro ao processar a imagem.';
+            });
+    }
+</script>
+
 <%- include ('partials/footer.ejs') %>
