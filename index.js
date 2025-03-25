@@ -82,9 +82,9 @@ app.get('/binarizar', async (req, res) => {
     }
     try {
         let { matrix, width, height } = await getPixelMatrix(uploadedImagePath);
-        let threshold = parseInt(req.query.threshold) || 128;
+        let threshold = parseInt(req.query.threshold)// || 128 Essa porta Lógica estava setando threshold como 128 quando o valor enviado do front era 0
         
-        matrix = matrix.map(row => row.map(pixel => (pixel >= threshold ? 255 : 0)));
+        matrix = matrix.map(row => row.map(pixel => {return (pixel >= threshold) ? 255 : 0;}));
         const imageUrl = await saveProcessedImage(matrix, width, height, `binarized_${Date.now()}.png`);
         res.json({ imageUrl });
     } catch (error) {
