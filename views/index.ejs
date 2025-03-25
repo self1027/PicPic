@@ -37,6 +37,7 @@
         </div>
     </div>
 </div>
+<br>
 
 <script>
     function autoUpload(event) {
@@ -82,7 +83,16 @@
         document.getElementById('processStatus').textContent = 'Processando...';
         document.getElementById('processStatus').style.display = 'block';
 
-        fetch(`/${filter}`)
+        // Obter o valor do threshold
+        const threshold = document.getElementById('threshold').value;
+        
+        // Criar a URL com o parâmetro de consulta
+        let url = `/${filter}`;
+        if (filter === 'binarizar') {
+            url += `?threshold=${threshold}`;
+        }
+
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 const processedImage = document.getElementById('processedImage');
