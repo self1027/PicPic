@@ -1,6 +1,6 @@
 # PicPic - Web App para Processamento de Imagens
 
-PicPic é um aplicativo web desenvolvido com Node.js e Express que permite o upload, visualização e processamento de imagens em preto e branco. Ele oferece a funcionalidade de binarização, permitindo que os usuários ajustem um limiar para transformar pixels acima do valor em preto e abaixo em branco.
+PicPic é um aplicativo web desenvolvido com Node.js e Express que permite o upload, visualização e processamento de imagens em preto e branco. Ele oferece a funcionalidade de binarização e alguns filtros, permitindo que os usuários ajustem um limiar para transformar pixels acima do valor em preto e abaixo em branco.
 
 ## 🚀 Tecnologias Utilizadas
 - **Backend:** Node.js, Express, Jimp
@@ -36,5 +36,5 @@ O aplicativo estará disponível em **http://localhost:3000**.
 ## 🖼️ Como Usar
 1. Selecione uma imagem em preto e branco.
 2. Defina o limiar para a binarização.
-3. Clique no botão "Binarizar" para processar a imagem.
+3. Clique no botão referente ao filtro desejado para processar a imagem.
 4. Veja a imagem processada na tela.
