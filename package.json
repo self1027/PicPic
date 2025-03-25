@@ -1,0 +1,20 @@
+{
+  "name": "picpic",
+  "version": "1.0.0",
+  "description": "WebApp para edição de imagens P&B",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Murilo D.",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "fs": "^0.0.1-security",
+    "jimp": "^1.6.0",
+    "jimp-compact": "^0.16.1-2",
+    "multer": "^1.4.5-lts.2"
+  }
+}
