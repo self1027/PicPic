@@ -65,17 +65,5 @@ O aplicativo estará disponível em **http://localhost:3000**.
 - **`/colorido`**: Rota para upload e conversão de imagens coloridas.
 - **`/colorido/converter`**: Rota para conversão de imagens coloridas para preto e branco com diferentes métodos (Média, Luminância, Desaturação, Canal Vermelho, YUV).
 
-## 📁 Estrutura do Projeto
-```
-├── public
-│   └── uploads          # Pasta para armazenar imagens processadas
-├── temp_uploads        # Pasta para armazenar imagens temporárias antes do processamento
-├── views
-│   └── index.ejs        # Página inicial
-│   └── colorfull.ejs    # Página para imagens coloridas
-├── app.js               # Arquivo principal da aplicação
-├── package.json         # Dependências do projeto
-```
-
 ## 🛠️ Contribuições
 Sinta-se à vontade para contribuir com melhorias e correções! Basta fazer um fork do repositório, criar uma branch e abrir um pull request.
