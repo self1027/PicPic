@@ -20,7 +20,7 @@ PicPic é um aplicativo web desenvolvido com Node.js e Express que permite o upl
 
 ### 1️⃣ Clonar o repositório
 ```sh
-git clone https://github.com/seu-usuario/picpic.git
+git clone https://github.com/self1027/PicPic.git
 cd picpic
 ```
 
