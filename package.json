@@ -16,6 +16,7 @@
     "jimp": "^1.6.0",
     "jimp-compact": "^0.16.1-2",
     "multer": "^1.4.5-lts.2",
+    "nodemon": "^3.1.10",
     "picpic": "file:"
   }
 }
