@@ -53,6 +53,28 @@
                     <small class="text-muted">Usa apenas o canal R</small>
                 </div>
 
+                <!-- Filtros Passa-Alta -->
+                <div class="col-md-3 mb-3">
+                    <button class="btn btn-outline-danger w-100" id="sobelBtn" onclick="convertImage('sobel')" disabled>
+                        <i class="bi bi-alt"></i> Filtro Sobel
+                    </button>
+                    <small class="text-muted">Realce direcional de bordas</small>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <button class="btn btn-outline-secondary w-100" id="laplacianoPositivoBtn" onclick="convertImage('laplaciano-positivo')" disabled>
+                        <i class="bi bi-plus-circle"></i> Laplaciano (+)
+                    </button>
+                    <small class="text-muted">Centro positivo</small>
+                </div>
+
+                <div class="col-md-3 mb-3">
+                    <button class="btn btn-outline-secondary w-100" id="laplacianoNegativoBtn" onclick="convertImage('laplaciano-negativo')" disabled>
+                        <i class="bi bi-dash-circle"></i> Laplaciano (−)
+                    </button>
+                    <small class="text-muted">Centro negativo</small>
+                </div>
+
                 <!-- Novo botão para YUV -->
                 <div class="col-md-3 mb-3">
                     <button class="btn btn-outline-secondary w-100" id="yuvBtn" onclick="convertImage('yuv')" disabled>
