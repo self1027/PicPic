@@ -14,6 +14,7 @@ app.use(express.static('public'));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 let uploadedImagePath = null;
+let originalImagePath = null;
 
 // Função auxiliar para obter matriz de pixels
 async function getPixelMatrix(imagePath) {
@@ -78,27 +79,25 @@ app.post('/colorido/upload', upload.single('image'), async (req, res) => {
     if (!req.file) {
         return res.status(400).json({ success: false, error: 'Nenhuma imagem enviada.' });
     }
-    
+
     try {
-        // Criar pasta de uploads se não existir
         const uploadDir = path.join(__dirname, 'public', 'uploads');
         if (!fs.existsSync(uploadDir)) {
             fs.mkdirSync(uploadDir, { recursive: true });
         }
 
-        // Mover o arquivo para a pasta pública
         const newFileName = `color_${Date.now()}${path.extname(req.file.originalname)}`;
         const newPath = path.join(uploadDir, newFileName);
-        
+
         await fs.promises.rename(req.file.path, newPath);
-        
+
         const imageUrl = `/uploads/${newFileName}`;
         uploadedImagePath = newPath;
-        
+        originalImagePath = newPath; // 🔧 sempre usar esta como base
+
         res.json({ success: true, imageUrl });
     } catch (error) {
         console.error('Erro no upload:', error);
-        // Tentar apagar o arquivo temporário se houver erro
         if (req.file && fs.existsSync(req.file.path)) {
             await fs.promises.unlink(req.file.path).catch(e => console.error('Erro ao apagar temp file:', e));
         }
@@ -106,68 +105,99 @@ app.post('/colorido/upload', upload.single('image'), async (req, res) => {
     }
 });
 
-// Rota para conversão de imagens (com validação melhorada)
+
+// Rota para conversão de imagens
 app.get('/colorido/converter', async (req, res) => {
     try {
-        if (!uploadedImagePath || !fs.existsSync(uploadedImagePath)) {
+        if (!originalImagePath || !fs.existsSync(originalImagePath)) {
             return res.status(400).json({ success: false, error: 'Nenhuma imagem válida carregada.' });
         }
 
         const method = req.query.method;
-        const validMethods = ['media', 'luminancia', 'desaturacao', 'canal-vermelho', 'yuv'];
-        if (!validMethods.includes(method)) {
-            return res.status(400).json({ success: false, error: 'Método de conversão inválido.' });
+        const { matrix, width, height } = await getPixelMatrix(originalImagePath);
+        let resultMatrix = [];
+
+        const outputFileName = `converted_${method}_${Date.now()}.png`;
+
+        if (['media', 'luminancia', 'desaturacao', 'canal-vermelho', 'yuv'].includes(method)) {
+            const image = await Jimp.read(originalImagePath);
+            image.scan(0, 0, image.bitmap.width, image.bitmap.height, function(x, y, idx) {
+                const r = this.bitmap.data[idx];
+                const g = this.bitmap.data[idx + 1];
+                const b = this.bitmap.data[idx + 2];
+
+                let grayValue = r;
+                switch (method) {
+                    case 'media':
+                        grayValue = Math.round((r + g + b) / 3);
+                        break;
+                    case 'luminancia':
+                    case 'yuv':
+                        grayValue = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+                        break;
+                    case 'desaturacao':
+                        grayValue = Math.round((Math.max(r, g, b) + Math.min(r, g, b)) / 2);
+                        break;
+                }
+
+                this.bitmap.data[idx] = grayValue;
+                this.bitmap.data[idx + 1] = grayValue;
+                this.bitmap.data[idx + 2] = grayValue;
+            });
+
+            const outputPath = path.join(__dirname, 'public', 'uploads', outputFileName);
+            await image.writeAsync(outputPath);
+            return res.json({ success: true, processedUrl: `/uploads/${outputFileName}` });
+
+        } else if (['sobel', 'laplaciano-positivo', 'laplaciano-negativo'].includes(method)) {
+            function applyKernel(matrix, width, height, kernel) {
+                return applyFilter(matrix, width, height, neighborhood => {
+                    let sum = 0;
+                    for (let i = 0; i < 9; i++) {
+                        sum += neighborhood[i] * kernel[i];
+                    }
+                    return Math.round(Math.min(255, Math.max(0, sum)));
+                });
+            }
+
+            if (method === 'laplaciano-positivo') {
+                const kernel = [0, -1, 0, -1, 4, -1, 0, -1, 0];
+                resultMatrix = applyKernel(matrix, width, height, kernel);
+            }
+
+            if (method === 'laplaciano-negativo') {
+                const kernel = [0, 1, 0, 1, -4, 1, 0, 1, 0];
+                resultMatrix = applyKernel(matrix, width, height, kernel);
+            }
+
+            if (method === 'sobel') {
+                const Gx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+                const Gy = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+
+                resultMatrix = applyFilter(matrix, width, height, neighborhood => {
+                    let sumX = 0, sumY = 0;
+                    for (let i = 0; i < 9; i++) {
+                        sumX += neighborhood[i] * Gx[i];
+                        sumY += neighborhood[i] * Gy[i];
+                    }
+                    const magnitude = Math.sqrt(sumX ** 2 + sumY ** 2);
+                    return Math.round(Math.min(255, Math.max(0, magnitude)));
+                });
+            }
+
+            const imageUrl = await saveProcessedImage(resultMatrix, width, height, outputFileName);
+            return res.json({ success: true, processedUrl: imageUrl });
         }
 
-        const image = await Jimp.read(uploadedImagePath);
-        const outputFileName = `converted_${method}_${Date.now()}.png`;
-        const outputPath = path.join(__dirname, 'public', 'uploads', outputFileName);
-
-        // Aplicar conversão
-        image.scan(0, 0, image.bitmap.width, image.bitmap.height, function(x, y, idx) {
-            const r = this.bitmap.data[idx];
-            const g = this.bitmap.data[idx + 1];
-            const b = this.bitmap.data[idx + 2];
-            
-            let grayValue = r; // Default to red channel
-            
-            switch(method) {
-                case 'media':
-                    grayValue = Math.round((r + g + b) / 3);
-                    break;
-                case 'luminancia':
-                    grayValue = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-                    break;
-                case 'desaturacao':
-                    grayValue = Math.round((Math.max(r, g, b) + Math.min(r, g, b)) / 2);
-                    break;
-                case 'yuv':
-                    // Conversão para o canal Y (luminância) do modelo YUV
-                    // Y = 0.299R + 0.587G + 0.114B (igual à luminância, pois é o valor Y no YUV)
-                    grayValue = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
-                    break;
-            }
-            
-            this.bitmap.data[idx] = grayValue;
-            this.bitmap.data[idx + 1] = grayValue;
-            this.bitmap.data[idx + 2] = grayValue;
-        });
-
-        await image.writeAsync(outputPath);
-        res.json({ 
-            success: true, 
-            processedUrl: `/uploads/${outputFileName}` 
-        });
+        return res.status(400).json({ success: false, error: 'Método de conversão inválido.' });
 
     } catch (error) {
         console.error('Erro na conversão:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Erro ao converter a imagem.',
-            details: error.message 
-        });
+        res.status(500).json({ success: false, error: 'Erro ao converter a imagem.', details: error.message });
     }
 });
+
+
 
 
 // Rota para upload de imagem
