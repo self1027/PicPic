@@ -99,6 +99,7 @@
                 processedImage.src = data.imageUrl;
                 processedImage.style.display = 'block';
                 document.getElementById('processStatus').textContent = 'Processamento concluído!';
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
             })
             .catch(error => {
                 console.error(error);

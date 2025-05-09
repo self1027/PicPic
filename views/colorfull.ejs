@@ -1,226 +1,230 @@
-<%- include ('partials/header.ejs') %>
-<%- include ('partials/navbar.ejs') %>
+<%- include('partials/header.ejs') %>
+<%- include('partials/navbar.ejs') %>
 
 <div class="container mt-4">
-    <div class="card shadow-sm p-4">
-        <h2 class="text-center mb-4">Conversão de Imagens Coloridas para Tons de Cinza</h2>
-        
-        <!-- Upload Section -->
-        <form id="uploadForm" action="/colorido/upload" method="POST" enctype="multipart/form-data" class="text-center">
-            <div class="mb-3">
-                <input type="file" class="form-control" name="image" accept="image/*" required onchange="autoUpload(event)">
-            </div>
-        </form>
-        
-        <!-- Image Preview -->
-        <div class="text-center mt-3">
-            <div class="h-100 d-flex align-items-center justify-content-center">
-                <img id="imagePreview" class="img-fluid rounded shadow" style="display:none; max-width: 100%; max-height: 400px;" />
-            </div>
-            <p id="uploadStatus" class="text-muted mt-2"></p>
-        </div>
+  <div class="card shadow-sm p-4">
+    <h2 class="text-center mb-4">Conversão de Imagens Coloridas para Tons de Cinza</h2>
 
-        <!-- Filtros Passa-Baixa -->
-        <div class="text-center mt-4">
-            <h4 class="mb-3 text-primary">Filtros Passa-Baixa (Suavização)</h4>
-            
-            <div class="row justify-content-center">
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100" id="mediaBtn" onclick="convertImage('media')" disabled>
-                        <i class="bi bi-circle"></i> Média Simples
-                    </button>
-                    <small class="text-muted">(R+G+B)/3</small>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100" id="luminanciaBtn" onclick="convertImage('luminancia')" disabled>
-                        <i class="bi bi-brightness-high"></i> Luminância
-                    </button>
-                    <small class="text-muted">0.299R + 0.587G + 0.114B</small>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100" id="desaturacaoBtn" onclick="convertImage('desaturacao')" disabled>
-                        <i class="bi bi-droplet"></i> Desaturação
-                    </button>
-                    <small class="text-muted">(max(R,G,B) + min(R,G,B))/2</small>
-                </div>
-                
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100" id="canalVermelhoBtn" onclick="convertImage('canal-vermelho')" disabled>
-                        <i class="bi bi-circle-fill" style="color: red;"></i> Canal Vermelho
-                    </button>
-                    <small class="text-muted">Usa apenas o canal R</small>
-                </div>
+    <!-- Upload Section -->
+    <form id="uploadForm" action="/colorido/upload" method="POST" enctype="multipart/form-data" class="text-center">
+      <div class="mb-3">
+        <input type="file" class="form-control" name="image" accept="image/*" required onchange="autoUpload(event)">
+      </div>
+    </form>
 
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100" id="yuvBtn" onclick="convertImage('yuv')" disabled>
-                        <i class="bi bi-circle-half"></i> Canal Y (YUV)
-                    </button>
-                    <small class="text-muted">Usa o canal Y (Luminância)</small>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filtros Passa-Alta -->
-        <div class="text-center mt-5">
-            <h4 class="mb-3 text-danger">Filtros Passa-Alta (Realce de Bordas)</h4>
-
-            <div class="row justify-content-center">
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-danger w-100" id="sobelBtn" onclick="convertImage('sobel')" disabled>
-                        <i class="bi bi-alt"></i> Filtro Sobel
-                    </button>
-                    <small class="text-muted">Realce direcional de bordas</small>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100" id="laplacianoPositivoBtn" onclick="convertImage('laplaciano-positivo')" disabled>
-                        <i class="bi bi-plus-circle"></i> Laplaciano (+)
-                    </button>
-                    <small class="text-muted">Centro positivo</small>
-                </div>
-
-                <div class="col-md-3 mb-3">
-                    <button class="btn btn-outline-secondary w-100" id="laplacianoNegativoBtn" onclick="convertImage('laplaciano-negativo')" disabled>
-                        <i class="bi bi-dash-circle"></i> Laplaciano (−)
-                    </button>
-                    <small class="text-muted">Centro negativo</small>
-                </div>
-            </div>
-            <p id="methodsHelpText" class="text-muted small">Envie uma imagem para habilitar os métodos</p>
-        </div>
+    <!-- Image Preview -->
+    <div class="text-center mt-3">
+      <div class="h-100 d-flex align-items-center justify-content-center">
+        <img id="imagePreview" class="img-fluid rounded shadow" style="display:none; max-width: 100%; max-height: 400px;" />
+      </div>
+      <p id="uploadStatus" class="text-muted mt-2"></p>
     </div>
 
-    <!-- Processed Image Section -->
-    <div class="card shadow-sm p-4 mt-4">
-        <h2 class="text-center mb-4">Imagem Processada</h2>
-        <div class="text-center">
-            <div class="h-100 d-flex align-items-center justify-content-center">
-                <img id="processedImage" class="img-fluid rounded shadow" style="display:none; max-width: 100%; max-height: 400px;" />
-            </div>
-            <p id="processStatus" class="text-muted mt-2"></p>
-            
-            <div class="mt-3" id="downloadSection" style="display:none;">
-                <a id="downloadLink" class="btn btn-success" download>
-                    <i class="bi bi-download"></i> Baixar Imagem
-                </a>
-            </div>
+    <!-- Filtros Passa-Baixa -->
+    <div class="text-center mt-4">
+      <h4 class="mb-3 text-primary">Filtros Passa-Baixa (Suavização)</h4>
+
+      <div class="row justify-content-center">
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="mediaBtn" onclick="convertImage('media')" disabled>
+            <i class="bi bi-circle"></i> Média Simples
+          </button>
+          <small class="text-muted">(R+G+B)/3</small>
         </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="luminanciaBtn" onclick="convertImage('luminancia')" disabled>
+            <i class="bi bi-brightness-high"></i> Luminância
+          </button>
+          <small class="text-muted">0.299R + 0.587G + 0.114B</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="desaturacaoBtn" onclick="convertImage('desaturacao')" disabled>
+            <i class="bi bi-droplet"></i> Desaturação
+          </button>
+          <small class="text-muted">(max(R,G,B) + min(R,G,B))/2</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="canalVermelhoBtn" onclick="convertImage('canal-vermelho')" disabled>
+            <i class="bi bi-circle-fill" style="color: red;"></i> Canal Vermelho
+          </button>
+          <small class="text-muted">Usa apenas o canal R</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="yuvBtn" onclick="convertImage('yuv')" disabled>
+            <i class="bi bi-circle-half"></i> Canal Y (YUV)
+          </button>
+          <small class="text-muted">Usa o canal Y (Luminância)</small>
+        </div>
+      </div>
     </div>
+
+    <!-- Filtros Passa-Alta -->
+    <div class="text-center mt-5">
+      <h4 class="mb-3 text-danger">Filtros Passa-Alta (Realce de Bordas)</h4>
+
+      <div class="row justify-content-center">
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="sobelBtn" onclick="convertImage('sobel')" disabled>
+            <i class="bi bi-alt"></i> Filtro Sobel
+          </button>
+          <small class="text-muted">Realce direcional de bordas</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="laplacianoPositivoBtn" onclick="convertImage('laplaciano-positivo')" disabled>
+            <i class="bi bi-plus-circle"></i> Laplaciano (+)
+          </button>
+          <small class="text-muted">Centro positivo</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="laplacianoNegativoBtn" onclick="convertImage('laplaciano-negativo')" disabled>
+            <i class="bi bi-dash-circle"></i> Laplaciano (−)
+          </button>
+          <small class="text-muted">Centro negativo</small>
+        </div>
+      </div>
+      <p id="methodsHelpText" class="text-muted small">Envie uma imagem para habilitar os métodos</p>
+    </div>
+  </div>
+
+  <!-- Processed Image Section -->
+  <div class="card shadow-sm p-4 mt-4">
+    <h2 class="text-center mb-4">Imagem Processada</h2>
+    <div class="text-center">
+      <div class="h-100 d-flex align-items-center justify-content-center">
+        <img id="processedImage" class="img-fluid rounded shadow" style="display:none; max-width: 100%; max-height: 400px;" />
+      </div>
+      <p id="processStatus" class="text-muted mt-2"></p>
+
+      <div class="mt-3" id="downloadSection" style="display:none;">
+        <a id="downloadLink" class="btn btn-success" download>
+          <i class="bi bi-download"></i> Baixar Imagem
+        </a>
+      </div>
+    </div>
+  </div>
 </div>
 <br>
 
 <script>
-    const methodButtons = [
-        'mediaBtn',
-        'luminanciaBtn',
-        'desaturacaoBtn',
-        'canalVermelhoBtn',
-        'yuvBtn',
-        'sobelBtn',
-        'laplacianoPositivoBtn',
-        'laplacianoNegativoBtn'
-    ];
+  const methodButtons = [
+    'mediaBtn',
+    'luminanciaBtn',
+    'desaturacaoBtn',
+    'canalVermelhoBtn',
+    'yuvBtn',
+    'sobelBtn',
+    'laplacianoPositivoBtn',
+    'laplacianoNegativoBtn'
+  ];
 
-    function autoUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const output = document.getElementById('imagePreview');
-            output.src = e.target.result;
-            output.style.display = 'block';
-            
-            document.getElementById('uploadStatus').textContent = 'Enviando imagem...';
-            document.getElementById('uploadStatus').className = 'text-warning';
-        };
-        reader.readAsDataURL(file);
-        
-        const formData = new FormData(document.getElementById('uploadForm'));
-        
-        fetch('/colorido/upload', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Erro no envio');
-            return response.json();
-        })
-        .then(data => {
-            document.getElementById('uploadStatus').textContent = 'Imagem enviada com sucesso!';
-            document.getElementById('uploadStatus').className = 'text-success';
-            
-            methodButtons.forEach(id => {
-                const btn = document.getElementById(id);
-                btn.disabled = false;
-                btn.classList.remove('btn-outline-secondary');
-                
-                if (id === 'mediaBtn') btn.classList.add('btn-outline-primary');
-                if (id === 'luminanciaBtn') btn.classList.add('btn-outline-success');
-                if (id === 'desaturacaoBtn') btn.classList.add('btn-outline-info');
-                if (id === 'canalVermelhoBtn') btn.classList.add('btn-outline-warning');
-                if (id === 'yuvBtn') btn.classList.add('btn-outline-dark');
-                if (id === 'sobelBtn') btn.classList.add('btn-outline-danger');
-            });
+  function autoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-            document.getElementById('methodsHelpText').style.display = 'none';
-            sessionStorage.setItem('currentImage', data.imageUrl);
-        })
-        .catch(error => {
-            console.error(error);
-            document.getElementById('uploadStatus').textContent = 'Erro ao enviar a imagem. Tente novamente.';
-            document.getElementById('uploadStatus').className = 'text-danger';
-        });
-    }
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const output = document.getElementById('imagePreview');
+      output.src = e.target.result;
+      output.style.display = 'block';
 
-    async function convertImage(method) {
-        const imageUrl = sessionStorage.getItem('currentImage');
-        if (!imageUrl) {
-            alert('Por favor, envie uma imagem primeiro.');
-            return;
-        }
-        
-        const statusElement = document.getElementById('processStatus');
-        const processedImg = document.getElementById('processedImage');
-        const downloadSection = document.getElementById('downloadSection');
-        const downloadLink = document.getElementById('downloadLink');
-        
-        statusElement.textContent = 'Processando...';
-        statusElement.className = 'text-warning';
-        processedImg.style.display = 'none';
-        downloadSection.style.display = 'none';
+      document.getElementById('uploadStatus').textContent = 'Enviando imagem...';
+      document.getElementById('uploadStatus').className = 'text-warning';
+    };
+    reader.readAsDataURL(file);
+
+    const formData = new FormData(document.getElementById('uploadForm'));
+
+    fetch('/colorido/upload', {
+      method: 'POST',
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Erro no envio');
+        return response.json();
+      })
+      .then(data => {
+        document.getElementById('uploadStatus').textContent = 'Imagem enviada com sucesso!';
+        document.getElementById('uploadStatus').className = 'text-success';
 
         methodButtons.forEach(id => {
-            document.getElementById(id).disabled = true;
+          const btn = document.getElementById(id);
+          btn.disabled = false;
+          btn.classList.remove('btn-outline-secondary');
+
+          if (id === 'mediaBtn') btn.classList.add('btn-outline-primary');
+          else if (id === 'luminanciaBtn') btn.classList.add('btn-outline-success');
+          else if (id === 'desaturacaoBtn') btn.classList.add('btn-outline-info');
+          else if (id === 'canalVermelhoBtn') btn.classList.add('btn-outline-warning');
+          else if (id === 'yuvBtn') btn.classList.add('btn-outline-dark');
+          else if (id === 'sobelBtn') btn.classList.add('btn-outline-danger');
+          else if (id === 'laplacianoPositivoBtn') btn.classList.add('btn-outline-dark');
+          else if (id === 'laplacianoNegativoBtn') btn.classList.add('btn-outline-info');
         });
-        
-        try {
-            const response = await fetch(`/colorido/converter?method=${method}&imageUrl=${encodeURIComponent(imageUrl)}`);
-            if (!response.ok) throw new Error('Erro na conversão');
-            
-            const data = await response.json();
-            
-            processedImg.src = data.processedUrl;
-            processedImg.style.display = 'block';
-            statusElement.textContent = 'Conversão concluída!';
-            statusElement.className = 'text-success';
-            
-            downloadLink.href = data.processedUrl;
-            downloadLink.download = `converted_${method}_${new Date().getTime()}.jpg`;
-            downloadSection.style.display = 'block';
-            
-        } catch (error) {
-            console.error(error);
-            statusElement.textContent = 'Erro ao converter a imagem.';
-            statusElement.className = 'text-danger';
-        } finally {
-            methodButtons.forEach(id => {
-                document.getElementById(id).disabled = false;
-            });
-        }
+
+        document.getElementById('methodsHelpText').style.display = 'none';
+        sessionStorage.setItem('currentImage', data.imageUrl);
+      })
+      .catch(error => {
+        console.error(error);
+        document.getElementById('uploadStatus').textContent = 'Erro ao enviar a imagem. Tente novamente.';
+        document.getElementById('uploadStatus').className = 'text-danger';
+      });
+  }
+
+  async function convertImage(method) {
+    const imageUrl = sessionStorage.getItem('currentImage');
+    if (!imageUrl) {
+      alert('Por favor, envie uma imagem primeiro.');
+      return;
     }
+
+    const statusElement = document.getElementById('processStatus');
+    const processedImg = document.getElementById('processedImage');
+    const downloadSection = document.getElementById('downloadSection');
+    const downloadLink = document.getElementById('downloadLink');
+
+    statusElement.textContent = 'Processando...';
+    statusElement.className = 'text-warning';
+    processedImg.style.display = 'none';
+    downloadSection.style.display = 'none';
+
+    methodButtons.forEach(id => {
+      document.getElementById(id).disabled = true;
+    });
+
+    try {
+      const response = await fetch(`/colorido/converter?method=${method}&imageUrl=${encodeURIComponent(imageUrl)}`);
+      if (!response.ok) throw new Error('Erro na conversão');
+
+      const data = await response.json();
+
+      processedImg.src = data.processedUrl;
+      processedImg.style.display = 'block';
+      statusElement.textContent = 'Conversão concluída!';
+      statusElement.className = 'text-success';
+
+      downloadLink.href = data.processedUrl;
+      downloadLink.download = `converted_${method}_${Date.now()}.jpg`;
+      downloadSection.style.display = 'block';
+
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+    } catch (error) {
+      console.error(error);
+      statusElement.textContent = 'Erro ao converter a imagem.';
+      statusElement.className = 'text-danger';
+    } finally {
+      methodButtons.forEach(id => {
+        document.getElementById(id).disabled = false;
+      });
+    }
+  }
 </script>
 
-<%- include ('partials/footer.ejs') %>
+<%- include('partials/footer.ejs') %>
