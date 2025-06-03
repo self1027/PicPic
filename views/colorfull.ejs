@@ -75,6 +75,13 @@
         </div>
 
         <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="prewittBtn" onclick="convertImage('prewitt')" disabled>
+            <i class="bi bi-border-width"></i> Filtro Prewitt
+          </button>
+          <small class="text-muted">Detecção de bordas</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
           <button class="btn btn-outline-secondary w-100" id="laplacianoPositivoBtn" onclick="convertImage('laplaciano-positivo')" disabled>
             <i class="bi bi-plus-circle"></i> Laplaciano (+)
           </button>
@@ -86,6 +93,34 @@
             <i class="bi bi-dash-circle"></i> Laplaciano (−)
           </button>
           <small class="text-muted">Centro negativo</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros Não-Lineares e Outros -->
+    <div class="text-center mt-5">
+      <h4 class="mb-3 text-success">Outros Filtros e Processamentos</h4>
+
+      <div class="row justify-content-center">
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="ordemKBtn" onclick="showOrderKModal()" disabled>
+            <i class="bi bi-sort-numeric-down"></i> Ordem K
+          </button>
+          <small class="text-muted">Filtro não-linear</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="quantizacaoBtn" onclick="showQuantizationModal()" disabled>
+            <i class="bi bi-palette"></i> Quantização
+          </button>
+          <small class="text-muted">Redução de cores</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-secondary w-100" id="equalizacaoBtn" onclick="convertImage('equalizacao')" disabled>
+            <i class="bi bi-contrast"></i> Equalização
+          </button>
+          <small class="text-muted">Equalização de histograma</small>
         </div>
       </div>
       <p id="methodsHelpText" class="text-muted small">Envie uma imagem para habilitar os métodos</p>
@@ -108,20 +143,72 @@
       </div>
     </div>
   </div>
-</div>
-<br>
 
+  <!-- Histogram Section -->
+  <div class="card shadow-sm p-4 mt-4">
+    <h2 class="text-center mb-4">Histograma</h2>
+    <div class="text-center">
+      <canvas id="histogramChart" width="800" height="400"></canvas>
+    </div>
+  </div>
+  <br>
+</div>
+
+<!-- Modal para Ordem K -->
+<div class="modal fade" id="orderKModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Filtro de Ordem K</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="kValue" class="form-label">Valor de K (1-9):</label>
+          <input type="number" id="kValue" class="form-control" min="1" max="9" value="5">
+          <small class="text-muted">K=5 equivale à mediana</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="applyOrderK()">Aplicar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Quantização -->
+<div class="modal fade" id="quantizationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Quantização de Cores</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="quantLevels" class="form-label">Níveis de Quantização (2-256):</label>
+          <input type="number" id="quantLevels" class="form-control" min="2" max="256" value="4">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" onclick="applyQuantization()">Aplicar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
   const methodButtons = [
-    'mediaBtn',
-    'luminanciaBtn',
-    'desaturacaoBtn',
-    'canalVermelhoBtn',
-    'yuvBtn',
-    'sobelBtn',
-    'laplacianoPositivoBtn',
-    'laplacianoNegativoBtn'
+    'mediaBtn', 'luminanciaBtn', 'desaturacaoBtn', 'canalVermelhoBtn', 'yuvBtn',
+    'sobelBtn', 'prewittBtn', 'laplacianoPositivoBtn', 'laplacianoNegativoBtn',
+    'ordemKBtn', 'quantizacaoBtn', 'equalizacaoBtn'
   ];
+
+  let histogramChart = null;
 
   function autoUpload(event) {
     const file = event.target.files[0];
@@ -152,19 +239,25 @@
         document.getElementById('uploadStatus').textContent = 'Imagem enviada com sucesso!';
         document.getElementById('uploadStatus').className = 'text-success';
 
+        // Habilitar todos os botões
         methodButtons.forEach(id => {
           const btn = document.getElementById(id);
           btn.disabled = false;
           btn.classList.remove('btn-outline-secondary');
-
-          if (id === 'mediaBtn') btn.classList.add('btn-outline-primary');
-          else if (id === 'luminanciaBtn') btn.classList.add('btn-outline-success');
-          else if (id === 'desaturacaoBtn') btn.classList.add('btn-outline-info');
-          else if (id === 'canalVermelhoBtn') btn.classList.add('btn-outline-warning');
-          else if (id === 'yuvBtn') btn.classList.add('btn-outline-dark');
-          else if (id === 'sobelBtn') btn.classList.add('btn-outline-danger');
-          else if (id === 'laplacianoPositivoBtn') btn.classList.add('btn-outline-dark');
-          else if (id === 'laplacianoNegativoBtn') btn.classList.add('btn-outline-info');
+          
+          // Estilização baseada no tipo de filtro
+          if (id.includes('Btn')) {
+            if (id === 'mediaBtn') btn.classList.add('btn-outline-primary');
+            else if (id === 'luminanciaBtn') btn.classList.add('btn-outline-success');
+            else if (id === 'desaturacaoBtn') btn.classList.add('btn-outline-info');
+            else if (id === 'canalVermelhoBtn') btn.classList.add('btn-outline-warning');
+            else if (id === 'yuvBtn') btn.classList.add('btn-outline-dark');
+            else if (id === 'sobelBtn' || id === 'prewittBtn') btn.classList.add('btn-outline-danger');
+            else if (id === 'laplacianoPositivoBtn') btn.classList.add('btn-outline-dark');
+            else if (id === 'laplacianoNegativoBtn') btn.classList.add('btn-outline-info');
+            else if (id === 'ordemKBtn' || id === 'quantizacaoBtn' || id === 'equalizacaoBtn') 
+              btn.classList.add('btn-outline-success');
+          }
         });
 
         document.getElementById('methodsHelpText').style.display = 'none';
@@ -177,7 +270,87 @@
       });
   }
 
-  async function convertImage(method) {
+  function showOrderKModal() {
+    const modal = new bootstrap.Modal(document.getElementById('orderKModal'));
+    modal.show();
+  }
+
+  function showQuantizationModal() {
+    const modal = new bootstrap.Modal(document.getElementById('quantizationModal'));
+    modal.show();
+  }
+
+  function applyOrderK() {
+    const kValue = document.getElementById('kValue').value;
+    convertImage('ordem-k', { k: kValue });
+    bootstrap.Modal.getInstance(document.getElementById('orderKModal')).hide();
+  }
+
+  function applyQuantization() {
+    const levels = document.getElementById('quantLevels').value;
+    convertImage('quantizacao', { levels: levels });
+    bootstrap.Modal.getInstance(document.getElementById('quantizationModal')).hide();
+  }
+
+  function updateHistogram(histogramData) {
+    const ctx = document.getElementById('histogramChart').getContext('2d');
+    
+    // Destruir o gráfico anterior se existir
+    if (histogramChart) {
+      histogramChart.destroy();
+    }
+    
+    // Criar novo gráfico
+    histogramChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Array.from({length: 256}, (_, i) => i),
+        datasets: [{
+          label: 'Distribuição de tons',
+          data: histogramData,
+          backgroundColor: 'rgba(75, 192, 192, 0.7)',
+          borderColor: 'rgba(75, 192, 192, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Valor do tom'
+            },
+            ticks: {
+              stepSize: 32,
+              maxTicksLimit: 9
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Frequência'
+            },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `Frequência: ${context.raw}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  async function convertImage(method, params = {}) {
     const imageUrl = sessionStorage.getItem('currentImage');
     if (!imageUrl) {
       alert('Por favor, envie uma imagem primeiro.');
@@ -194,25 +367,44 @@
     processedImg.style.display = 'none';
     downloadSection.style.display = 'none';
 
+    // Desabilitar todos os botões durante o processamento
     methodButtons.forEach(id => {
       document.getElementById(id).disabled = true;
     });
 
     try {
-      const response = await fetch(`/colorido/converter?method=${method}&imageUrl=${encodeURIComponent(imageUrl)}`);
+      // Construir a URL com parâmetros
+      const urlParams = new URLSearchParams();
+      urlParams.append('method', method);
+      urlParams.append('imageUrl', imageUrl);
+      
+      // Adicionar parâmetros adicionais se existirem
+      for (const [key, value] of Object.entries(params)) {
+        urlParams.append(key, value);
+      }
+
+      const response = await fetch(`/colorido/converter?${urlParams.toString()}`);
       if (!response.ok) throw new Error('Erro na conversão');
 
       const data = await response.json();
 
+      // Atualizar a imagem processada
       processedImg.src = data.processedUrl;
       processedImg.style.display = 'block';
       statusElement.textContent = 'Conversão concluída!';
       statusElement.className = 'text-success';
 
+      // Atualizar o histograma
+      if (data.histogram) {
+        updateHistogram(data.histogram);
+      }
+
+      // Configurar o link de download
       downloadLink.href = data.processedUrl;
-      downloadLink.download = `converted_${method}_${Date.now()}.jpg`;
+      downloadLink.download = `converted_${method}_${Date.now()}.png`;
       downloadSection.style.display = 'block';
 
+      // Rolagem suave para a imagem processada
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
 
     } catch (error) {
@@ -220,6 +412,7 @@
       statusElement.textContent = 'Erro ao converter a imagem.';
       statusElement.className = 'text-danger';
     } finally {
+      // Reabilitar todos os botões após o processamento
       methodButtons.forEach(id => {
         document.getElementById(id).disabled = false;
       });

@@ -1,111 +1,266 @@
-<%- include ('partials/header.ejs') %>
-<%- include ('partials/navbar.ejs') %>
+<%- include('partials/header.ejs') %>
+<%- include('partials/navbar.ejs') %>
 
 <div class="container mt-4">
-    <div class="card shadow-sm p-4">
-        <h2 class="text-center mb-4">Tratamento de Imagens em Tons de Cinza</h2>
-        <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="text-center">
-            <div class="mb-3">
-                <input type="file" class="form-control" name="image" accept="image/*" onchange="autoUpload(event)">
-            </div>
-        </form>
-        <div class="text-center mt-3">
-            <div class="h-100 d-flex align-items-center justify-content-center">
-                <img id="imagePreview" class="img-fluid rounded shadow" style="display:none; max-width: 100%;" />
-            </div>
-            <p id="uploadStatus" class="text-muted mt-2" style="display:none;"></p>
-        </div>
-        <div class="text-center mt-3">
-            <label for="threshold">Limiar de Binarização (0-255):</label>
-            <input type="number" id="threshold" class="form-control w-25 d-inline" min="0" max="255" value="128" disabled>
-        </div>
-        <div class="text-center mt-3">
-            <button class="btn btn-success" id="binarizarBtn" onclick="processImage('binarizar')" disabled>Binarizar</button>
-            <button class="btn btn-primary" id="mediaBtn" onclick="processImage('filtro-media')" disabled>Filtro Média</button>
-            <button class="btn btn-warning" id="medianaBtn" onclick="processImage('filtro-mediana')" disabled>Filtro Mediana</button>
-            <button class="btn btn-info" id="modaBtn" onclick="processImage('filtro-moda')" disabled>Filtro Moda</button>
-        </div>
-    </div>
-    
-    <div class="card shadow-sm p-4 mt-4">
-        <h2 class="text-center mb-4">Imagem Processada</h2>
-        <div class="text-center">
-            <div class="h-100 d-flex align-items-center justify-content-center">
-                <img id="processedImage" class="img-fluid rounded shadow" style="display:none; max-width: 100%;" />
-            </div>
-            <p id="processStatus" class="text-muted mt-2" style="display:none;"></p>
-        </div>
-    </div>
-</div>
-<br>
+  <div class="card shadow-sm p-4">
+    <h2 class="text-center mb-4">Tratamento de Imagens em Tons de Cinza</h2>
 
+    <!-- Upload Section -->
+    <form id="uploadForm" action="/upload" method="POST" enctype="multipart/form-data" class="text-center">
+      <div class="mb-3">
+        <input type="file" class="form-control" name="image" accept="image/*" required onchange="autoUpload(event)">
+      </div>
+    </form>
+
+    <!-- Image Preview -->
+    <div class="text-center mt-3">
+      <div class="h-100 d-flex align-items-center justify-content-center">
+        <img id="imagePreview" class="img-fluid rounded shadow" style="display:none; max-width: 100%; max-height: 400px;" />
+      </div>
+      <p id="uploadStatus" class="text-muted mt-2"></p>
+    </div>
+
+    <!-- Filtros Básicos -->
+    <div class="text-center mt-4">
+      <h4 class="mb-3 text-primary">Filtros Básicos</h4>
+
+      <div class="row justify-content-center">
+        <div class="col-md-3 mb-3">
+          <div class="mb-2">
+            <label for="threshold" class="form-label">Limiar (0-255):</label>
+            <input type="number" id="threshold" class="form-control" min="0" max="255" value="128" disabled>
+          </div>
+          <button class="btn btn-outline-primary w-100" id="binarizarBtn" onclick="processImage('binarizar')" disabled>
+            <i class="bi bi-toggle-on"></i> Binarização
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros de Suavização -->
+    <div class="text-center mt-4">
+      <h4 class="mb-3 text-success">Filtros de Suavização</h4>
+
+      <div class="row justify-content-center">
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-success w-100" id="mediaBtn" onclick="processImage('filtro-media')" disabled>
+            <i class="bi bi-calculator"></i> Média
+          </button>
+          <small class="text-muted">Média da vizinhança</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-success w-100" id="medianaBtn" onclick="processImage('filtro-mediana')" disabled>
+            <i class="bi bi-filter-square"></i> Mediana
+          </button>
+          <small class="text-muted">Valor central ordenado</small>
+        </div>
+
+        <div class="col-md-3 mb-3">
+          <button class="btn btn-outline-success w-100" id="modaBtn" onclick="processImage('filtro-moda')" disabled>
+            <i class="bi bi-graph-up"></i> Moda
+          </button>
+          <small class="text-muted">Valor mais frequente</small>
+        </div>
+      </div>
+    </div>
+
+    <p id="methodsHelpText" class="text-muted small text-center mt-3">Envie uma imagem para habilitar os métodos</p>
+  </div>
+
+  <!-- Processed Image Section -->
+  <div class="card shadow-sm p-4 mt-4">
+    <h2 class="text-center mb-4">Imagem Processada</h2>
+    <div class="text-center">
+      <div class="h-100 d-flex align-items-center justify-content-center">
+        <img id="processedImage" class="img-fluid rounded shadow" style="display:none; max-width: 100%; max-height: 400px;" />
+      </div>
+      <p id="processStatus" class="text-muted mt-2"></p>
+
+      <div class="mt-3" id="downloadSection" style="display:none;">
+        <a id="downloadLink" class="btn btn-success" download>
+          <i class="bi bi-download"></i> Baixar Imagem
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Histogram Section -->
+  <div class="card shadow-sm p-4 mt-4">
+    <h2 class="text-center mb-4">Histograma</h2>
+    <div class="text-center">
+      <canvas id="histogramChart" width="800" height="400"></canvas>
+    </div>
+  </div>
+  <br>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    function autoUpload(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = function () {
-            const output = document.getElementById('imagePreview');
-            output.src = reader.result;
-            output.style.display = 'block';
-            document.getElementById('uploadStatus').textContent = 'Enviando imagem...';
-            document.getElementById('uploadStatus').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
-        
-        const form = document.getElementById('uploadForm');
-        const formData = new FormData(form);
-        
-        fetch('/upload', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Erro no envio da imagem');
-            return response.text();
-        })
-        .then(() => {
-            document.getElementById('uploadStatus').textContent = 'Imagem enviada com sucesso!';
-            document.getElementById('threshold').disabled = false;
-            document.getElementById('binarizarBtn').disabled = false;
-            document.getElementById('mediaBtn').disabled = false;
-            document.getElementById('medianaBtn').disabled = false;
-            document.getElementById('modaBtn').disabled = false;
-        })
-        .catch(error => {
-            console.error(error);
-            document.getElementById('uploadStatus').textContent = 'Erro ao enviar a imagem. Tente novamente.';
+  const methodButtons = [
+    'binarizarBtn',
+    'mediaBtn',
+    'medianaBtn',
+    'modaBtn'
+  ];
+
+  let histogramChart = null;
+
+  function autoUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const output = document.getElementById('imagePreview');
+      output.src = e.target.result;
+      output.style.display = 'block';
+
+      document.getElementById('uploadStatus').textContent = 'Enviando imagem...';
+      document.getElementById('uploadStatus').className = 'text-warning';
+    };
+    reader.readAsDataURL(file);
+
+    const formData = new FormData(document.getElementById('uploadForm'));
+
+    fetch('/upload', {
+      method: 'POST',
+      body: formData
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Erro no envio');
+        return response.text();
+      })
+      .then(() => {
+        document.getElementById('uploadStatus').textContent = 'Imagem enviada com sucesso!';
+        document.getElementById('uploadStatus').className = 'text-success';
+
+        methodButtons.forEach(id => {
+          const btn = document.getElementById(id);
+          btn.disabled = false;
+          btn.classList.remove('btn-outline-secondary');
         });
+
+        document.getElementById('threshold').disabled = false;
+        document.getElementById('methodsHelpText').style.display = 'none';
+      })
+      .catch(error => {
+        console.error(error);
+        document.getElementById('uploadStatus').textContent = 'Erro ao enviar a imagem. Tente novamente.';
+        document.getElementById('uploadStatus').className = 'text-danger';
+      });
+  }
+
+  function updateHistogram(histogramData) {
+    const ctx = document.getElementById('histogramChart').getContext('2d');
+    
+    if (histogramChart) {
+      histogramChart.destroy();
+    }
+    
+    histogramChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: Array.from({length: 256}, (_, i) => i),
+        datasets: [{
+          label: 'Distribuição de tons',
+          data: histogramData,
+          backgroundColor: 'rgba(54, 162, 235, 0.7)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Valor do tom'
+            },
+            ticks: {
+              stepSize: 32,
+              maxTicksLimit: 9
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Frequência'
+            },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return `Frequência: ${context.raw}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function processImage(filter) {
+    const statusElement = document.getElementById('processStatus');
+    const processedImg = document.getElementById('processedImage');
+    const downloadSection = document.getElementById('downloadSection');
+    const downloadLink = document.getElementById('downloadLink');
+
+    statusElement.textContent = 'Processando...';
+    statusElement.className = 'text-warning';
+    processedImg.style.display = 'none';
+    downloadSection.style.display = 'none';
+
+    methodButtons.forEach(id => {
+      document.getElementById(id).disabled = true;
+    });
+
+    const threshold = document.getElementById('threshold').value;
+    let url = `/${filter}`;
+    
+    if (filter === 'binarizar') {
+      url += `?threshold=${threshold}`;
     }
 
-    function processImage(filter) {
-        document.getElementById('processStatus').textContent = 'Processando...';
-        document.getElementById('processStatus').style.display = 'block';
+    fetch(url)
+      .then(response => {
+        if (!response.ok) throw new Error('Erro no processamento');
+        return response.json();
+      })
+      .then(data => {
+        processedImg.src = data.imageUrl;
+        processedImg.style.display = 'block';
+        statusElement.textContent = 'Processamento concluído!';
+        statusElement.className = 'text-success';
 
-        // Obter o valor do threshold
-        const threshold = document.getElementById('threshold').value;
-        
-        // Criar a URL com o parâmetro de consulta
-        let url = `/${filter}`;
-        if (filter === 'binarizar') {
-            url += `?threshold=${threshold}`;
+        if (data.histogram) {
+          updateHistogram(data.histogram);
         }
 
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                const processedImage = document.getElementById('processedImage');
-                processedImage.src = data.imageUrl;
-                processedImage.style.display = 'block';
-                document.getElementById('processStatus').textContent = 'Processamento concluído!';
-                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-            })
-            .catch(error => {
-                console.error(error);
-                document.getElementById('processStatus').textContent = 'Erro ao processar a imagem.';
-            });
-    }
+        downloadLink.href = data.imageUrl;
+        downloadLink.download = `processed_${filter}_${Date.now()}.png`;
+        downloadSection.style.display = 'block';
+
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      })
+      .catch(error => {
+        console.error(error);
+        statusElement.textContent = 'Erro ao processar a imagem.';
+        statusElement.className = 'text-danger';
+      })
+      .finally(() => {
+        methodButtons.forEach(id => {
+          document.getElementById(id).disabled = false;
+        });
+      });
+  }
 </script>
 
-<%- include ('partials/footer.ejs') %>
+<%- include('partials/footer.ejs') %>
